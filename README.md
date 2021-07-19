@@ -92,7 +92,7 @@ a new id. It returns a chanel where you will receive a Result. Which either cont
 gen, err := snowflake.New()
 
 for i := 0; i < 10; i++ {
-    r := <-gen.Next()
+    r := gen.Next()
     fmt.Printf("%064b\n", r.ID)
 }
 ```
