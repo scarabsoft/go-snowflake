@@ -1,232 +1,123 @@
-package main
+package snowflake
 
 import (
-	"errors"
-	"fmt"
-	"io"
-	"math"
-	"time"
+	"github.com/scarabsoft/go-snowflake/internal"
 )
-
-const (
-	totalBits    = 64
-	epochBits    = 42
-	nodeBits     = 8
-	sequenceBits = 12
-)
-
-var ErrClockNotMonotonic = errors.New("clock is not monotonic")
-
-var (
-	//maxSequence = (int16)(math.Pow(2, sequenceBits) - 1)
-	maxSequence = int16(4)
-	maxNodeId   = (int16)(math.Pow(2, nodeBits) - 1)
-)
-
-type Clock interface {
-	// Return the number of milliseconds passed since a specific epoch
-	Millis() (int64, error)
-}
-
-type UnixClock struct{}
-
-func (u UnixClock) Millis() (int64, error) {
-	return time.Now().UnixNano() / 1e6, nil
-}
 
 type NodeProvider interface {
-	ID() (int8, error)
+	internal.NodeProvider
 }
 
-type fixedNodeProvider struct {
-	id int8
+func NewFixedNodeProvider(id uint8) NodeProvider {
+	return internal.NewFixedNodeProvider(id)
 }
 
-func (f fixedNodeProvider) ID() (int8, error) {
-	return f.id, nil
-}
-
-type Result struct {
-	ID    int64
-	Error error
-}
-
-type Sequence struct {
-	Millis    int64
-	Iteration int16
-	Error     error
-}
-
-func sequenceOk(millis int64, it int16) Sequence {
-	return Sequence{Millis: millis, Iteration: it}
-}
-
-func sequenceError(err error) Sequence {
-	return Sequence{Error: err}
-}
-
-type SequenceProvider interface {
-	io.Closer
-	Sequence() <-chan Sequence
-}
-
-type sequenceProviderImpl struct {
-	clock        Clock
-	maxIteration int16
-
-	closeChan   chan struct{}
-	requestChan chan chan Sequence
-
-	currentMillis    int64
-	currentIteration int16
-}
-
-func (s *sequenceProviderImpl) Close() error {
-	s.closeChan <- struct{}{}
-	return nil
-}
-
-func (s *sequenceProviderImpl) Sequence() <-chan Sequence {
-	r := make(chan Sequence)
-	go func() {
-		s.requestChan <- r
-	}()
-	return r
-}
-
-func (s *sequenceProviderImpl) generateNextSequence() Sequence {
-	millis, err := s.clock.Millis()
-	if err != nil {
-		return sequenceError(err)
-	}
-
-	if millis < s.currentMillis {
-		return sequenceError(ErrClockNotMonotonic)
-	}
-
-	if millis != s.currentMillis {
-		s.currentMillis = millis
-		s.currentIteration = 0
-	}
-
-	if s.currentIteration >= s.maxIteration {
-		time.Sleep(1 * time.Millisecond)
-		return s.generateNextSequence()
-	}
-
-	s.currentIteration += 1
-	return sequenceOk(s.currentMillis, s.currentIteration)
-}
-
-func (s *sequenceProviderImpl) run() {
-	go func() {
-		for {
-			select {
-			case <-s.closeChan:
-				return
-			case responseChannel := <-s.requestChan:
-				responseChannel <- s.generateNextSequence()
-			}
-		}
-	}()
-}
-
-func NewSequenceProvider(clock Clock, maxIteration int16) *sequenceProviderImpl {
-	r := &sequenceProviderImpl{
-		clock:        clock,
-		closeChan:    make(chan struct{}),
-		requestChan:  make(chan chan Sequence, maxSequence),
-		maxIteration: maxIteration,
-	}
-	r.run()
-	return r
-}
-
+// Generator generates a snowflake like ID which is unique if and only if the NodeProvider provides a unique ID
+// It assumes that the provided clock makes progress, if the sequence exhausted the system will not continue producing IDs
+// ID format:   |-----42 Epoch Bits-----|-----8 Node Bits-----|-----14 Sequence Bits-----|
 type Generator interface {
-	Next() <-chan Result
+	internal.SnowflakeGenerator
 }
+
 type generatorImpl struct {
-	seqProvider  SequenceProvider
+	gen internal.SnowflakeGenerator
+}
+
+func (g *generatorImpl) Next() <-chan internal.Result {
+	return g.gen.Next()
+}
+
+// Clock provides a time in ms for the generator and will be called for every ID once
+type Clock interface {
+	internal.Clock
+}
+
+func NewUnixClock() Clock {
+	return internal.NewUnixClockWithEpoch(0)
+}
+
+func NewUnixClockWithEpoch(epoch uint64) Clock {
+	return internal.NewUnixClockWithEpoch(epoch)
+}
+
+type generatorBuilderImpl struct {
+	clock        Clock
 	nodeProvider NodeProvider
+	maxSequence  uint16
 }
 
-func (s *generatorImpl) Next() <-chan Result {
-	r := make(chan Result)
-	go func() {
-		defer close(r)
-		seq := <-s.seqProvider.Sequence()
-		if seq.Error != nil {
-			r <- Result{0, seq.Error}
-			return
-		}
+type Option func(*generatorBuilderImpl) error
 
-		nodeId, err := s.nodeProvider.ID()
-		if err != nil {
-			r <- Result{0, err}
-			return
-		}
-
-		id := seq.Millis << uint(totalBits-epochBits)
-		id |= int64(nodeId << uint(totalBits-epochBits-nodeBits))
-		id |= int64(seq.Iteration)
-
-		r <- Result{id, nil}
-	}()
-	return r
+// Sets a custom clock. Default system clock with UNIX epoch
+func WithClock(clock Clock) Option {
+	return func(impl *generatorBuilderImpl) error {
+		impl.clock = clock
+		return nil
+	}
 }
 
-//func (s *generatorImpl) Next() (int64, error) {
-//	var result = millis, err := s.clock.Sequence()
-//	if err != nil {
-//		return 0, err
-//	}
+// Sets the NodeProvider, which allows to generate nodeID based on hardware, like MAC or ...
+// Make sure it generates a unique 8bit ID per node otherwise you will get duplicated IDs
+func WithNodeProvider(provider NodeProvider) Option {
+	return func(impl *generatorBuilderImpl) error {
+		impl.nodeProvider = provider
+		return nil
+	}
+}
+
+// Sets the id of the current Node. By default 1
+func WithNodeId(nodeID uint8) Option {
+	return func(impl *generatorBuilderImpl) error {
+		impl.nodeProvider = NewFixedNodeProvider(nodeID)
+		return nil
+	}
+}
+
+// Sets the max sequence per ms the system should support. By default 16,383 (16,383 ids can be generated per ms)
+func WithMaxSequence(maxSeq uint16) Option {
+	return func(impl *generatorBuilderImpl) error {
+		impl.maxSequence = maxSeq
+		return nil
+	}
+}
+
+// Returns a new default generator and apply the requested options
 //
-//}
-
-//var sf = snowflake.NewSnowFlake()
-
-func generateUniqueSequence(i int) {
-	//seqID, err := sf.GenerateUniqueSequenceID()
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//fmt.Println(i, "    ", "seqID::", seqID)
-}
-
-func main() {
-	//FIXME document that
-	fmt.Println("MaxSeq ", maxSequence)
-	fmt.Println("MaxNodeId ", maxNodeId)
-
-	c := UnixClock{}
-	//fmt.Println(c.Sequence())
-
-	provider := NewSequenceProvider(c, 1)
-
-	for i := 0; i < 10; i++ {
-		go func() {
-			s := <-provider.Sequence()
-			fmt.Println(s)
-		}()
-
+// Default:
+//		- Clock: system clock returning UNIX epoch
+//		- Node: has ID 1
+//		- MaxSequence: set to 16,383 (16,383 ids can be generated per ms)
+func New(options ...Option) (*generatorImpl, error) {
+	r := &generatorBuilderImpl{
+		clock:        NewUnixClock(),
+		nodeProvider: NewFixedNodeProvider(1),
+		maxSequence:  internal.MaxSequence,
 	}
 
-	//time.Sleep(1 * time.Second)
-	//
-	//provider.Close()
-
-	gen := generatorImpl{
-		seqProvider:  provider,
-		nodeProvider: fixedNodeProvider{2},
+	for _, option := range options {
+		if err := option(r); err != nil {
+			return nil, err
+		}
 	}
 
-	fmt.Println(<-gen.Next())
-	time.Sleep(1 * time.Second)
+	seqProvider, err := internal.NewSequenceProvider(
+		r.clock,
+		r.maxSequence,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-	//for i := 0; i < 100; i++ {
-	//	go generateUniqueSequence(i)
-	//}
-	//
-	//time.Sleep(10 * time.Second)
+	gen, err := internal.NewGenerator(
+		seqProvider,
+		r.nodeProvider,
+	)
 
+	if err != nil {
+		return nil, err
+	}
+
+	return &generatorImpl{
+		gen: gen,
+	}, nil
 }
