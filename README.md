@@ -1,7 +1,7 @@
 go-snowflake
 ====
 [![GoDoc](https://godoc.org/github.com/scarabsoft/go-snowflake?status.svg)](https://godoc.org/github.com/scarabsoft/go-snowflake) 
-[![Go report](http://goreportcard.com/badge/scarabsoft/go-snowflake)](http://goreportcard.com/report/scarabsoft/go-snowflake)
+[![Go Report Card](https://goreportcard.com/badge/github.com/scarabsoft/go-snowflake)](https://goreportcard.com/report/github.com/scarabsoft/go-snowflake)
 [![Code Coverage](https://codecov.io/gh/scarabsoft/go-snowflake/branch/main/graph/badge.svg)](https://codecov.io/gh/scarabsoft/go-snowflake)
 
 snowflake is a [Go](https://golang.org/) package that provides
