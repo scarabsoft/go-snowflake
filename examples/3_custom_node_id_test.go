@@ -36,8 +36,8 @@ func TestCustomNodeId(t *testing.T) {
 
 	assert.That(err, is.Nil())
 
-	r1 := <-nodeGen1.Next()
-	r2 := <-nodeGen2.Next()
+	r1 := nodeGen1.Next()
+	r2 := nodeGen2.Next()
 
 	assert.That(r2.ID, is.GreaterThan(r1.ID))
 

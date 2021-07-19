@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/scarabsoft/go-hamcrest"
 	"github.com/scarabsoft/go-hamcrest/is"
-	"sync"
 	"testing"
 	"time"
 )
@@ -42,37 +41,12 @@ func TestSequenceError(t *testing.T) {
 	assert.That(r.Error, is.EqualTo(givenError))
 }
 
-func TestSequenceProviderImpl_Close(t *testing.T) {
-	wg := sync.WaitGroup{}
-	assert := hamcrest.NewAssertion(t)
-
-	closeChan := make(chan struct{})
-	testInstance := &sequenceProviderImpl{closeChan: closeChan}
-	go func() {
-		wg.Add(1)
-		for {
-			select {
-			case <-closeChan:
-				wg.Done()
-				return
-			case <-time.After(10 * time.Millisecond):
-				t.Fatal("Close channel not received within 10 ms")
-			}
-		}
-	}()
-
-	err := testInstance.Close()
-	assert.That(err, is.Nil())
-
-	wg.Wait()
-}
-
 func TestGenerateNextSequence(t *testing.T) {
 	t.Run("clock returns error", func(t *testing.T) {
 		assert := hamcrest.NewAssertion(t)
 		testInstance := &sequenceProviderImpl{clock: errorClock{}}
 
-		seq := testInstance.generateNextSequence()
+		seq := testInstance.Sequence()
 		assert.That(seq.Millis, is.EqualTo(uint64(0)))
 		assert.That(seq.Iteration, is.EqualTo(uint16(0)))
 		assert.That(seq.Error, is.EqualTo(givenErrClock))
@@ -80,7 +54,7 @@ func TestGenerateNextSequence(t *testing.T) {
 	t.Run("clock skew", func(t *testing.T) {
 		assert := hamcrest.NewAssertion(t)
 		testInstance := &sequenceProviderImpl{currentMillis: 10, clock: fakeClock{6}}
-		seq := testInstance.generateNextSequence()
+		seq := testInstance.Sequence()
 		assert.That(seq.Millis, is.EqualTo(uint64(0)))
 		assert.That(seq.Iteration, is.EqualTo(uint16(0)))
 		assert.That(seq.Error, is.EqualTo(ErrClockNotMonotonic))
@@ -92,7 +66,7 @@ func TestGenerateNextSequence(t *testing.T) {
 
 		go func() {
 			// this is expected to block forever as the clock does not make any progress
-			testInstance.generateNextSequence()
+			testInstance.Sequence()
 			c <- struct{}{}
 		}()
 
@@ -108,7 +82,7 @@ func TestGenerateNextSequence(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		assert := hamcrest.NewAssertion(t)
 		testInstance := &sequenceProviderImpl{clock: fakeClock{10}, maxIteration: 2}
-		seq := testInstance.generateNextSequence()
+		seq := testInstance.Sequence()
 		assert.That(seq.Millis, is.EqualTo(uint64(10)))
 		assert.That(seq.Iteration, is.EqualTo(uint16(1)))
 		assert.That(seq.Error, is.Nil())
@@ -137,8 +111,7 @@ func TestSequenceProviderImpl(t *testing.T) {
 
 	for j := 0; j < 2; j++ {
 		for i := 0; i < 10; i++ {
-			c := testInstance.Sequence()
-			seq := <-c
+			seq := testInstance.Sequence()
 			assert.That(seq.Millis, is.EqualTo(uint64(j)))
 			assert.That(seq.Iteration, is.EqualTo(uint16(i+1)))
 			assert.That(seq.Error, is.Nil())
@@ -152,16 +125,14 @@ func TestSequenceProvider_SequenceExhaustion(t *testing.T) {
 	assert.That(err, is.Nil())
 
 	for i := 0; i < 5; i++ {
-		c := testInstance.Sequence()
-		seq := <-c
+		seq := testInstance.Sequence()
 		assert.That(seq.Millis, is.EqualTo(uint64(0)))
 		assert.That(seq.Iteration, is.EqualTo(uint16(i+1)))
 		assert.That(seq.Error, is.Nil())
 	}
 
 	for i := 0; i < 5; i++ {
-		c := testInstance.Sequence()
-		seq := <-c
+		seq := testInstance.Sequence()
 		assert.That(seq.Millis, is.EqualTo(uint64(1)))
 		assert.That(seq.Iteration, is.EqualTo(uint16(i+1)))
 		assert.That(seq.Error, is.Nil())

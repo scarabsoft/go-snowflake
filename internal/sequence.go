@@ -3,7 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"io"
+	"sync"
 	"time"
 )
 
@@ -33,43 +33,30 @@ func sequenceError(err error) Sequence {
 
 // SequenceProvider generates sequences which will be used by the snowflake generator
 type SequenceProvider interface {
-	io.Closer
-
 	//Generates the next sequence which must be unique, otherwise it will result in duplicated IDs
-	Sequence() <-chan Sequence
+	Sequence() Sequence
 }
 
 type sequenceProviderImpl struct {
 	clock        Clock
 	maxIteration uint16
-
-	closeChan   chan struct{}
-	requestChan chan chan Sequence
+	lock         sync.Mutex
 
 	currentMillis    uint64
 	currentIteration uint16
 }
 
-func (s *sequenceProviderImpl) Close() error {
-	s.closeChan <- struct{}{}
-	return nil
-}
+func (s *sequenceProviderImpl) Sequence() Sequence {
+	s.lock.Lock()
 
-func (s *sequenceProviderImpl) Sequence() <-chan Sequence {
-	r := make(chan Sequence)
-	go func() {
-		<- r
-	}()
-	return r
-}
-
-func (s *sequenceProviderImpl) generateNextSequence() Sequence {
 	millis, err := s.clock.Millis()
 	if err != nil {
+		s.lock.Unlock()
 		return sequenceError(err)
 	}
 
 	if millis < s.currentMillis {
+		s.lock.Unlock()
 		return sequenceError(ErrClockNotMonotonic)
 	}
 
@@ -79,25 +66,14 @@ func (s *sequenceProviderImpl) generateNextSequence() Sequence {
 	}
 
 	if s.currentIteration >= s.maxIteration {
-		time.Sleep(1 * time.Millisecond)
-		return s.generateNextSequence()
+		time.Sleep(100 * time.Microsecond)
+		s.lock.Unlock()
+		return s.Sequence()
 	}
 
 	s.currentIteration += 1
+	defer s.lock.Unlock()
 	return sequenceOk(s.currentMillis, s.currentIteration)
-}
-
-func (s *sequenceProviderImpl) run() {
-	go func() {
-		for {
-			select {
-			case <-s.closeChan:
-				return
-			case responseChannel := <-s.requestChan:
-				responseChannel <- s.generateNextSequence()
-			}
-		}
-	}()
 }
 
 // Returns and starts a new sequence provider, can be stopped by invoking Close()
@@ -109,10 +85,9 @@ func NewSequenceProvider(clock Clock, maxSequence uint16) (*sequenceProviderImpl
 
 	r := &sequenceProviderImpl{
 		clock:        clock,
-		closeChan:    make(chan struct{}),
-		requestChan:  make(chan chan Sequence, maxSequence),
+		lock:         sync.Mutex{},
 		maxIteration: maxSequence,
 	}
-	r.run()
+
 	return r, nil
 }

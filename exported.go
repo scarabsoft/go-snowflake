@@ -23,8 +23,14 @@ type generatorImpl struct {
 	gen internal.SnowflakeGenerator
 }
 
-func (g *generatorImpl) Next() <-chan internal.Result {
-	return g.gen.Next()
+type Result struct {
+	ID    uint64
+	Error error
+}
+
+func (g *generatorImpl) Next() Result {
+	t := g.gen.Next()
+	return Result{t.ID, t.Error}
 }
 
 // Clock provides a time in ms for the generator and will be called for every ID once

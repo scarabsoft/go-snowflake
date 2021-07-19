@@ -7,25 +7,22 @@ import (
 	"testing"
 )
 
-func BenchmarkTestBenchmark_Single(b *testing.B) {
-	gen, _ := snowflake.New()
+var cores = runtime.NumCPU()
+var wg = sync.WaitGroup{}
+var gen, _ = snowflake.New()
 
+func BenchmarkTestBenchmark_Single(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_ = <- gen.Next()
+		_ = gen.Next()
 	}
 }
 
-func BenchmarkTestBenchmark_Multiple(b *testing.B) {
-	cores := runtime.NumCPU()
-
-	gen, _ := snowflake.New()
-
-	wg := sync.WaitGroup{}
+func BenchmarkTestBenchmark_Parallel(b *testing.B) {
 	for i := 0; i < cores; i++ {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			for i := 0; i < b.N/cores; i++ {
-				gen.Next()
+				_ = gen.Next()
 			}
 			wg.Done()
 		}()

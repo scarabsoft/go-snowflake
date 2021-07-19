@@ -2,7 +2,7 @@ go-snowflake
 ====
 [![GoDoc](https://godoc.org/github.com/scarabsoft/go-snowflake?status.svg)](https://godoc.org/github.com/scarabsoft/go-snowflake) 
 [![Go report](http://goreportcard.com/badge/scarabsoft/go-snowflake)](http://goreportcard.com/report/scarabsoft/go-snowflake)
-[![Coverage](http://gocover.io/_badge/github.com/scarabsoft/go-snowflake)](https://gocover.io/github.com/scarabsoft/go-snowflake) 
+[![Code Coverage](https://codecov.io/gh/scarabsoft/go-snowflake/branch/main/graph/badge.svg)](https://codecov.io/gh/scarabsoft/go-snowflake)
 
 snowflake is a [Go](https://golang.org/) package that provides
 * A very simple Twitter like snowflake generator.
@@ -102,59 +102,21 @@ across multiple servers.  If you do not keep node numbers unique the generator
 cannot guarantee unique IDs across all nodes.
 
 Use only a clock implementation which increases monotonic. If you use a clock which does not make any progress, the generator
-will hang once the the sequences are exhausted for this specific millisecond.
-
-**Example Program:**
-
-```go
-package main
-
-import (
-	"fmt"
-	"github.com/scarabsoft/go-snowflake"
-)
-
-func main() {
-
-	// Create a new Node with a Node number of 1
-	node, err := snowflake.NewNode(1)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// Generate a snowflake ID.
-	id := node.Generate()
-
-	// Print out the ID in a few different ways.
-	fmt.Printf("Int64  ID: %d\n", id)
-	fmt.Printf("String ID: %s\n", id)
-	fmt.Printf("Base2  ID: %s\n", id.Base2())
-	fmt.Printf("Base64 ID: %s\n", id.Base64())
-
-	// Print out the ID's timestamp
-	fmt.Printf("ID Time  : %d\n", id.Time())
-
-	// Print out the ID's node number
-	fmt.Printf("ID Node  : %d\n", id.Node())
-
-	// Print out the ID's sequence number
-	fmt.Printf("ID Step  : %d\n", id.Step())
-
-  // Generate and print, all in one.
-  fmt.Printf("ID       : %d\n", node.Generate().Int64())
-}
-```
+will block once the the sequences are exhausted for max 1 ms.
 
 ### Performance
 
-With default settings, this snowflake generator should be sufficiently fast 
-enough on most systems to generate 4096 unique ID's per millisecond. This is 
-the maximum that the snowflake ID format supports. That is, around 243-244 
-nanoseconds per operation. 
+```bash
+cpu: Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz
+BenchmarkTestBenchmark_Single
+BenchmarkTestBenchmark_Single-8     	15689761	        72.59 ns/op
+BenchmarkTestBenchmark_Parallel
+BenchmarkTestBenchmark_Parallel-8   	10395352	       117.8 ns/op
+```
 
-Since the snowflake generator is single threaded the primary limitation will be
-the maximum speed of a single processor on your system.
+With default settings, this snowflake generator should be sufficiently fast 
+enough on most systems to generate 4096+ unique ids per millisecond. 
+The maximum snowflake ID this format supports is 16383. 
 
 To benchmark the generator on your system run the following command inside the
 snowflake package directory.

@@ -32,7 +32,7 @@ func TestCustomClockEpoch(t *testing.T) {
 
 	assert.That(err, is.Nil())
 
-	r := <-gen.Next()
+	r := gen.Next()
 	binId := fmt.Sprintf("%064b", r.ID)
 	assert.That(binId, is.EqualTo("0000000000000000000000000000000000000000000000000100000000000001"))
 

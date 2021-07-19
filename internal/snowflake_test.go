@@ -32,8 +32,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 		t.Run("1", func(t *testing.T) {
 			assert := hamcrest.NewAssertion(t)
 
-			c := testInstance.Next()
-			r := <-c
+			r := testInstance.Next()
 			assert.That(r.Error, is.Nil())
 			bin := fmt.Sprintf("%064b", r.ID)
 			assert.That(bin, is.EqualTo("0000000000000000000000000000000000000010100010101000000000000001"))
@@ -42,8 +41,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 		t.Run("2", func(t *testing.T) {
 			assert := hamcrest.NewAssertion(t)
 
-			c := testInstance.Next()
-			r := <-c
+			r := testInstance.Next()
 			assert.That(r.Error, is.Nil())
 			bin := fmt.Sprintf("%064b", r.ID)
 			assert.That(bin, is.EqualTo("0000000000000000000000000000000000000010100010101000000000000010"))
@@ -52,8 +50,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 		t.Run("3", func(t *testing.T) {
 			assert := hamcrest.NewAssertion(t)
 
-			c := testInstance.Next()
-			r := <-c
+			r := testInstance.Next()
 			assert.That(r.Error, is.Nil())
 			bin := fmt.Sprintf("%064b", r.ID)
 			assert.That(bin, is.EqualTo("0000000000000000000000000000000000000010100010101000000000000011"))
@@ -75,8 +72,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 		t.Run("1", func(t *testing.T) {
 			assert := hamcrest.NewAssertion(t)
 
-			c := testInstance.Next()
-			r := <-c
+			r := testInstance.Next()
 			assert.That(r.Error, is.Nil())
 			bin := fmt.Sprintf("%064b", r.ID)
 			assert.That(bin, is.EqualTo("0000000000000000000000000000000000000000010010101000000000000001"))
@@ -85,8 +81,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 		t.Run("2", func(t *testing.T) {
 			assert := hamcrest.NewAssertion(t)
 
-			c := testInstance.Next()
-			r := <-c
+			r := testInstance.Next()
 			assert.That(r.Error, is.Nil())
 			bin := fmt.Sprintf("%064b", r.ID)
 			assert.That(bin, is.EqualTo("0000000000000000000000000000000000000000100010101000000000000001"))
@@ -95,8 +90,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 		t.Run("3", func(t *testing.T) {
 			assert := hamcrest.NewAssertion(t)
 
-			c := testInstance.Next()
-			r := <-c
+			r := testInstance.Next()
 			assert.That(r.Error, is.Nil())
 			bin := fmt.Sprintf("%064b", r.ID)
 			assert.That(bin, is.EqualTo("0000000000000000000000000000000000000000110010101000000000000001"))
@@ -117,8 +111,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 			)
 			assert.That(err, is.Nil())
 
-			c := testInstance.Next()
-			r := <-c
+			r := testInstance.Next()
 			assert.That(r.Error, is.Nil())
 			bin := fmt.Sprintf("%064b", r.ID)
 			assert.That(bin, is.EqualTo("0000000000000000000000000000000000000010100000000100000000000001"))
@@ -136,8 +129,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 			)
 			assert.That(err, is.Nil())
 
-			c := testInstance.Next()
-			r := <-c
+			r := testInstance.Next()
 			assert.That(r.Error, is.Nil())
 			bin := fmt.Sprintf("%064b", r.ID)
 			assert.That(bin, is.EqualTo("0000000000000000000000000000000000000010100000001000000000000001"))

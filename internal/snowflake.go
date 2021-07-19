@@ -1,7 +1,7 @@
 package internal
 
 type SnowflakeGenerator interface {
-	Next() <-chan Result
+	Next() Result
 }
 
 type snowFlakeGeneratorImpl struct {
@@ -9,23 +9,17 @@ type snowFlakeGeneratorImpl struct {
 	nodeID      uint8
 }
 
-func (s *snowFlakeGeneratorImpl) Next() <-chan Result {
-	r := make(chan Result)
-	go func() {
-		defer close(r)
-		seq := <-s.seqProvider.Sequence()
-		if seq.Error != nil {
-			r <- Result{0, seq.Error}
-			return
-		}
+func (s *snowFlakeGeneratorImpl) Next() Result {
+	seq := s.seqProvider.Sequence()
+	if seq.Error != nil {
+		return Result{0, seq.Error}
+	}
 
-		id := seq.Millis << uint64(totalBits-epochBits)
-		id |= uint64(s.nodeID) << uint64(totalBits-epochBits-nodeBits)
-		id |= uint64(seq.Iteration)
+	id := seq.Millis << uint64(totalBits-epochBits)
+	id |= uint64(s.nodeID) << uint64(totalBits-epochBits-nodeBits)
+	id |= uint64(seq.Iteration)
 
-		r <- Result{id, nil}
-	}()
-	return r
+	return Result{id, nil}
 }
 
 func NewGenerator(seq SequenceProvider, node NodeProvider) (SnowflakeGenerator, error) {
