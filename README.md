@@ -35,33 +35,49 @@ values. You do not have to use all 22 bits.
 
 ### Custom Clock
 By default this package uses the Unix Epoch of 0 or January 1, 1970 12:00:00 AM.
-You can set your own epoch value by setting to a time in milliseconds
-to use as the epoch.
+You can set your own clock. Keep in mind that it is important that the clock is monoton increasing!
 
 ```go
+customClock := NewCustomClock(...)
 gen, err := snowflake.New(
-    snowflake.WithClock(snowflake.NewUnixClockWithEpoch(now)),
+    snowflake.WithClock(customClock),
 )
 ```
 
 ### Custom Epoch
 By default the generator uses the Unix Epoch of 0 or January 1, 1970 12:00:00 AM.
-You can set your own epoch value by setting to a time in milliseconds
+You can set your own epoch value by setting to a time in nanoseconds 
 to use as the epoch.
 
 ```go
+now := uint64(time.Now().UnixNano())
 gen, err := snowflake.New(
     snowflake.WithClock(snowflake.NewUnixClockWithEpoch(now)),
 )
 ```
 
 ### Custom Node Id
-By default the generator uses 1 as the default nodeID. You can set it like:
+By default the generator uses 1 as default nodeID. You can set it like:
 ```go
 gen, err := snowflake.New(
     snowflake.WithNodeId(1),
 )
 ```
+### Custom Node Id Provider
+It is possible to automatically generate the nodeID, e.g. by reading the MAC address. You just have to implement the NodeIDProvider interface.
+```go
+type NodeIDProvider interface {
+	ID() (uint8, error)
+}
+```
+Then you can use it like:
+```go
+yourProvider := NewProvider(...)
+gen, err := snowflake.New(
+    snowflake.WithNodeIDProvider(yourprovider),
+)
+```
+
 
 ### How it Works.
 Each time you generate an ID, it works, like this.
