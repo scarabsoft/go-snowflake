@@ -117,10 +117,3 @@ BenchmarkTestBenchmark_Parallel-8   	10395352	       117.8 ns/op
 With default settings, this snowflake generator should be sufficiently fast 
 enough on most systems to generate 4096+ unique ids per millisecond. 
 The maximum snowflake ID this format supports is 16383. 
-
-To benchmark the generator on your system run the following command inside the
-snowflake package directory.
-
-```sh
-go test -run=^$ -bench=.
-```
