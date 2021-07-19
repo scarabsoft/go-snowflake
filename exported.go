@@ -4,15 +4,15 @@ import (
 	"github.com/scarabsoft/go-snowflake/internal"
 )
 
-type NodeProvider interface {
-	internal.NodeProvider
+type NodeIDProvider interface {
+	internal.NodeIDProvider
 }
 
-func NewFixedNodeProvider(id uint8) NodeProvider {
-	return internal.NewFixedNodeProvider(id)
+func NewFixedNodeProvider(id uint8) NodeIDProvider {
+	return internal.NewFixedNodeIdProvider(id)
 }
 
-// Generator generates a snowflake like ID which is unique if and only if the NodeProvider provides a unique ID
+// Generator generates a snowflake like ID which is unique if and only if the NodeIDProvider provides a unique ID
 // It assumes that the provided clock makes progress, if the sequence exhausted the system will not continue producing IDs
 // ID format:   |-----42 Epoch Bits-----|-----8 Node Bits-----|-----14 Sequence Bits-----|
 type Generator interface {
@@ -48,7 +48,7 @@ func NewUnixClockWithEpoch(epoch uint64) Clock {
 
 type generatorBuilderImpl struct {
 	clock        Clock
-	nodeProvider NodeProvider
+	nodeProvider NodeIDProvider
 	maxSequence  uint16
 }
 
@@ -62,9 +62,9 @@ func WithClock(clock Clock) Option {
 	}
 }
 
-// Sets the NodeProvider, which allows to generate nodeID based on hardware, like MAC or ...
+// Sets the NodeIDProvider, which allows to generate nodeID based on hardware, like MAC or ...
 // Make sure it generates a unique 8bit ID per node otherwise you will get duplicated IDs
-func WithNodeProvider(provider NodeProvider) Option {
+func WithNodeIDProvider(provider NodeIDProvider) Option {
 	return func(impl *generatorBuilderImpl) error {
 		impl.nodeProvider = provider
 		return nil

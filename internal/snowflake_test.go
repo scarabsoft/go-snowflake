@@ -25,7 +25,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 
 		testInstance, err := NewGenerator(
 			seqProvider,
-			fixedNodeProviderImpl{42},
+			fixedNodeIdProviderImpl{42},
 		)
 		assert.That(err, is.Nil())
 
@@ -65,7 +65,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 
 		testInstance, err := NewGenerator(
 			seqProvider,
-			fixedNodeProviderImpl{42},
+			fixedNodeIdProviderImpl{42},
 		)
 		assert.That(err, is.Nil())
 
@@ -107,7 +107,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 
 			testInstance, err := NewGenerator(
 				seqProvider,
-				fixedNodeProviderImpl{1},
+				fixedNodeIdProviderImpl{1},
 			)
 			assert.That(err, is.Nil())
 
@@ -125,7 +125,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 
 			testInstance, err := NewGenerator(
 				seqProvider,
-				fixedNodeProviderImpl{2},
+				fixedNodeIdProviderImpl{2},
 			)
 			assert.That(err, is.Nil())
 

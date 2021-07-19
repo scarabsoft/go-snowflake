@@ -22,7 +22,7 @@ func (s *snowFlakeGeneratorImpl) Next() Result {
 	return Result{id, nil}
 }
 
-func NewGenerator(seq SequenceProvider, node NodeProvider) (SnowflakeGenerator, error) {
+func NewGenerator(seq SequenceProvider, node NodeIDProvider) (SnowflakeGenerator, error) {
 	nodeID, err := node.ID()
 	if err != nil {
 		return nil, err

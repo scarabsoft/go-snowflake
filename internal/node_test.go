@@ -8,13 +8,13 @@ import (
 
 func TestNewGenerator(t *testing.T) {
 	assert := hamcrest.NewAssertion(t)
-	testInstance := NewFixedNodeProvider(128)
+	testInstance := NewFixedNodeIdProvider(128)
 	assert.That(testInstance.id, is.EqualTo(uint8(128)))
 }
 
 func TestFixedNodeProvider_ID(t *testing.T) {
 	assert := hamcrest.NewAssertion(t)
-	testInstance := NewFixedNodeProvider(128)
+	testInstance := NewFixedNodeIdProvider(128)
 	r, err := testInstance.ID()
 	assert.That(err, is.Nil())
 	assert.That(r, is.EqualTo(uint8(128)))
