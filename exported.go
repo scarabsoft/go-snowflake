@@ -16,7 +16,7 @@ func NewFixedNodeProvider(id uint8) NodeIDProvider {
 // It assumes that the provided clock makes progress, if the sequence exhausted the system will not continue producing IDs
 // ID format:   |-----42 Epoch Bits-----|-----8 Node Bits-----|-----14 Sequence Bits-----|
 type Generator interface {
-	internal.SnowflakeGenerator
+	Next() Result
 }
 
 type generatorImpl struct {
@@ -93,7 +93,7 @@ func WithMaxSequence(maxSeq uint16) Option {
 //		- Clock: system clock returning UNIX epoch
 //		- Node: has ID 1
 //		- MaxSequence: set to 16,383 (16,383 ids can be generated per ms)
-func New(options ...Option) (*generatorImpl, error) {
+func New(options ...Option) (Generator, error) {
 	r := &generatorBuilderImpl{
 		clock:        NewUnixClock(),
 		nodeProvider: NewFixedNodeProvider(1),
