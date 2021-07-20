@@ -17,58 +17,79 @@ func NewFixedNodeProvider(id uint8) NodeIDProvider {
 // It assumes that the provided clock makes progress, if the sequence exhausted the system will not continue producing IDs
 // ID format:   |-----42 Epoch Bits-----|-----8 Node Bits-----|-----14 Sequence Bits-----|
 type Generator interface {
-	Next() ID
+	Next() (ID, error)
 }
 
 type generatorImpl struct {
 	gen internal.SnowflakeGenerator
 }
 
-type ID struct {
-	ID    uint64
-	Error error
+type idImpl struct {
+	id uint64
 }
 
-func (i ID) Millis() uint64 {
-	r := i.ID >> 22
+func (i idImpl) ID() uint64 {
+	return i.id
+}
+
+func (i idImpl) Millis() uint64 {
+	r := i.ID() >> 22
 	return r
 }
 
-func (i ID) Weeks() uint64 {
+func (i idImpl) Weeks() uint64 {
 	return i.Days() / 7
 }
 
-func (i ID) Days() uint64 {
+func (i idImpl) Days() uint64 {
 	return i.Hours() / 24
 }
 
-func (i ID) Hours() uint64 {
+func (i idImpl) Hours() uint64 {
 	return i.Minutes() / 60
 }
 
-func (i ID) Minutes() uint64 {
+func (i idImpl) Minutes() uint64 {
 	return i.Seconds() / 60
 }
 
-func (i ID) Seconds() uint64 {
+func (i idImpl) Seconds() uint64 {
 	return i.Millis() / 1000
 }
 
-func (i ID) NodeID() uint8 {
-	return uint8(i.ID >> (14))
+func (i idImpl) NodeID() uint8 {
+	return uint8(i.ID() >> (14))
 }
 
-func (i ID) Iteration() uint16 {
-	return uint16(i.ID)
+func (i idImpl) Iteration() uint16 {
+	return uint16(i.ID())
 }
 
-func (i ID) String() string {
-	return fmt.Sprintf("%d", i.ID)
+func (i idImpl) String() string {
+	return fmt.Sprintf("%d", i.ID())
 }
 
-func (g *generatorImpl) Next() ID {
-	t := g.gen.Next()
-	return ID{t.ID, t.Error}
+type ID interface {
+	ID() uint64
+
+	Millis() uint64
+	Weeks() uint64
+	Days() uint64
+	Hours() uint64
+	Minutes() uint64
+	Seconds() uint64
+
+	NodeID() uint8
+	Iteration() uint16
+	String() string
+}
+
+func (g *generatorImpl) Next() (ID, error) {
+	r, err := g.gen.Next()
+	if err != nil {
+		return nil, err
+	}
+	return &idImpl{r}, nil
 }
 
 // Clock provides a time in ms for the generator and will be called for every ID once
@@ -167,5 +188,5 @@ func New(options ...Option) (Generator, error) {
 }
 
 func From(id uint64) ID {
-	return ID{ID: id, Error: nil}
+	return &idImpl{id}
 }

@@ -17,12 +17,12 @@ func TestSimple(t *testing.T) {
 	var prev uint64 = 0
 
 	for i := 0; i < 10; i++ {
-		r := gen.Next()
-		fmt.Printf("%064b\n", r.ID)
-		assert.That(r.Error, is.Nil())
-		assert.That(r.ID, is.GreaterThan(uint64(0)))
+		r, err := gen.Next()
+		assert.That(err, is.Nil())
+		fmt.Printf("%064b\n", r.ID())
+		assert.That(r.ID(), is.GreaterThan(uint64(0)))
 
-		assert.That(r.ID, is.GreaterThan(prev))
-		prev = r.ID
+		assert.That(r.ID(), is.GreaterThan(prev))
+		prev = r.ID()
 	}
 }

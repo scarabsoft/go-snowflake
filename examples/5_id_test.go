@@ -1,7 +1,6 @@
 package examples
 
 import (
-	"fmt"
 	"github.com/scarabsoft/go-hamcrest"
 	"github.com/scarabsoft/go-hamcrest/is"
 	"github.com/scarabsoft/go-snowflake"
@@ -25,7 +24,8 @@ func TestID(t *testing.T) {
 	)
 	assert.That(err, is.Nil())
 
-	testInstance := gen.Next()
+	testInstance, err := gen.Next()
+	assert.That(err, is.Nil())
 	assert.That(testInstance.NodeID(), is.EqualTo(uint8(128)))
 
 	assert.That(testInstance.Iteration(), is.EqualTo(uint16(1)))
@@ -44,8 +44,6 @@ func TestFrom(t *testing.T) {
 	assert := hamcrest.NewAssertion(t)
 
 	testInstance := snowflake.From(6823236456859828225)
-	assert.That(testInstance.Error, is.Nil())
-	assert.That(testInstance.ID, is.EqualTo(uint64(6823236456859828225)))
+	assert.That(testInstance.ID(), is.EqualTo(uint64(6823236456859828225)))
 
-	fmt.Printf("%s", testInstance)
 }

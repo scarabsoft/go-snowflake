@@ -36,13 +36,13 @@ func TestCustomNodeId(t *testing.T) {
 
 	assert.That(err, is.Nil())
 
-	r1 := nodeGen1.Next()
-	r2 := nodeGen2.Next()
+	r1, _ := nodeGen1.Next()
+	r2, _ := nodeGen2.Next()
 
-	assert.That(r2.ID, is.GreaterThan(r1.ID))
+	assert.That(r2.ID(), is.GreaterThan(r1.ID()))
 
-	binId1 := fmt.Sprintf("%064b", r1.ID)
-	binId2 := fmt.Sprintf("%064b", r2.ID)
+	binId1 := fmt.Sprintf("%064b", r1.ID())
+	binId2 := fmt.Sprintf("%064b", r2.ID())
 
 	assert.That(binId1, has.Prefix("00000000000000000000000000000001"))
 	assert.That(binId2, has.Prefix("00000000000000000000000000000001"))

@@ -13,7 +13,7 @@ var gen, _ = snowflake.New()
 
 func BenchmarkTestBenchmark_Single(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_ = gen.Next()
+		_, _ = gen.Next()
 	}
 }
 
@@ -22,7 +22,7 @@ func BenchmarkTestBenchmark_Parallel(b *testing.B) {
 		wg.Add(1)
 		go func() {
 			for i := 0; i < b.N/cores; i++ {
-				_ = gen.Next()
+				_, _ = gen.Next()
 			}
 			wg.Done()
 		}()
