@@ -23,14 +23,14 @@ func TestCustomNodeId(t *testing.T) {
 	clock := fakeClock{1337}
 
 	nodeGen1, err := snowflake.New(
-		snowflake.WithNodeId(1),
+		snowflake.WithNodeID(1),
 		snowflake.WithClock(clock),
 	)
 
 	assert.That(err, is.Nil())
 
 	nodeGen2, err := snowflake.New(
-		snowflake.WithNodeId(2),
+		snowflake.WithNodeID(2),
 		snowflake.WithClock(clock),
 	)
 

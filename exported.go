@@ -1,6 +1,7 @@
 package snowflake
 
 import (
+	"fmt"
 	"github.com/scarabsoft/go-snowflake/internal"
 )
 
@@ -16,21 +17,58 @@ func NewFixedNodeProvider(id uint8) NodeIDProvider {
 // It assumes that the provided clock makes progress, if the sequence exhausted the system will not continue producing IDs
 // ID format:   |-----42 Epoch Bits-----|-----8 Node Bits-----|-----14 Sequence Bits-----|
 type Generator interface {
-	Next() Result
+	Next() ID
 }
 
 type generatorImpl struct {
 	gen internal.SnowflakeGenerator
 }
 
-type Result struct {
+type ID struct {
 	ID    uint64
 	Error error
 }
 
-func (g *generatorImpl) Next() Result {
+func (i ID) Millis() uint64 {
+	r := i.ID >> 22
+	return r
+}
+
+func (i ID) Weeks() uint64 {
+	return i.Days() / 7
+}
+
+func (i ID) Days() uint64 {
+	return i.Hours() / 24
+}
+
+func (i ID) Hours() uint64 {
+	return i.Minutes() / 60
+}
+
+func (i ID) Minutes() uint64 {
+	return i.Seconds() / 60
+}
+
+func (i ID) Seconds() uint64 {
+	return i.Millis() / 1000
+}
+
+func (i ID) NodeID() uint8 {
+	return uint8(i.ID >> (14))
+}
+
+func (i ID) Iteration() uint16 {
+	return uint16(i.ID)
+}
+
+func (i ID) String() string {
+	return fmt.Sprintf("%d", i.ID)
+}
+
+func (g *generatorImpl) Next() ID {
 	t := g.gen.Next()
-	return Result{t.ID, t.Error}
+	return ID{t.ID, t.Error}
 }
 
 // Clock provides a time in ms for the generator and will be called for every ID once
@@ -72,7 +110,7 @@ func WithNodeIDProvider(provider NodeIDProvider) Option {
 }
 
 // Sets the id of the current Node. By default 1
-func WithNodeId(nodeID uint8) Option {
+func WithNodeID(nodeID uint8) Option {
 	return func(impl *generatorBuilderImpl) error {
 		impl.nodeProvider = NewFixedNodeProvider(nodeID)
 		return nil
