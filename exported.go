@@ -165,3 +165,7 @@ func New(options ...Option) (Generator, error) {
 		gen: gen,
 	}, nil
 }
+
+func From(id uint64) ID {
+	return ID{ID: id, Error: nil}
+}

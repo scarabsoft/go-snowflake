@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestID(t *testing.T) {
+func TestSimple(t *testing.T) {
 	assert := hamcrest.NewAssertion(t)
 
 	gen, err := snowflake.New()

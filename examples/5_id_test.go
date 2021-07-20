@@ -1,6 +1,7 @@
 package examples
 
 import (
+	"fmt"
 	"github.com/scarabsoft/go-hamcrest"
 	"github.com/scarabsoft/go-hamcrest/is"
 	"github.com/scarabsoft/go-snowflake"
@@ -15,7 +16,7 @@ func (f fakeClockImpl) Millis() (uint64, error) {
 	return f.value, nil
 }
 
-func TestSimple(t *testing.T) {
+func TestID(t *testing.T) {
 	assert := hamcrest.NewAssertion(t)
 
 	gen, err := snowflake.New(
@@ -37,4 +38,14 @@ func TestSimple(t *testing.T) {
 	assert.That(testInstance.Weeks(), is.EqualTo(uint64(2689)))
 
 	assert.That(testInstance.String(), is.EqualTo("6823236456859828225"))
+}
+
+func TestFrom(t *testing.T) {
+	assert := hamcrest.NewAssertion(t)
+
+	testInstance := snowflake.From(6823236456859828225)
+	assert.That(testInstance.Error, is.Nil())
+	assert.That(testInstance.ID, is.EqualTo(uint64(6823236456859828225)))
+
+	fmt.Printf("%s", testInstance)
 }
