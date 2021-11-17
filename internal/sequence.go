@@ -1,20 +1,14 @@
 package internal
 
 import (
-	"errors"
-	"fmt"
 	"sync"
 	"time"
-)
-
-var (
-	ErrMaxSequenceOutOfRange = errors.New(fmt.Sprintf("maxSequence is capped to %d", MaxSequence))
 )
 
 // Sequence is contains information about the current sequence consisting of millis and iteration or an error
 type Sequence struct {
 	// number of passed since epoch
-	Millis uint64
+	Seconds uint64
 	// current iteration within the same milliseconds
 	// this increments if and only if multiple sequences gets generated at the same millis
 	// it can be max 16383
@@ -23,8 +17,8 @@ type Sequence struct {
 	Error error
 }
 
-func sequenceOk(millis uint64, it uint16) Sequence {
-	return Sequence{Millis: millis, Iteration: it}
+func sequenceOk(seconds uint64, it uint16) Sequence {
+	return Sequence{Seconds: seconds, Iteration: it}
 }
 
 func sequenceError(err error) Sequence {
@@ -33,7 +27,7 @@ func sequenceError(err error) Sequence {
 
 // SequenceProvider generates sequences which will be used by the snowflake generator
 type SequenceProvider interface {
-	//Generates the next sequence which must be unique, otherwise it will result in duplicated IDs
+	// Sequence generates the next sequence which must be unique, otherwise it will result in duplicated IDs
 	Sequence() Sequence
 }
 
@@ -42,41 +36,37 @@ type sequenceProviderImpl struct {
 	maxIteration uint16
 	lock         sync.Mutex
 
-	currentMillis    uint64
+	currentSeconds   uint64
 	currentIteration uint16
 }
 
 func (s *sequenceProviderImpl) Sequence() Sequence {
 	s.lock.Lock()
 
-	millis, err := s.clock.Millis()
-	if err != nil {
-		s.lock.Unlock()
-		return sequenceError(err)
-	}
+	secondsSinceEpoch := s.clock.Seconds()
 
-	if millis < s.currentMillis {
+	if secondsSinceEpoch < s.currentSeconds {
 		s.lock.Unlock()
 		return sequenceError(ErrClockNotMonotonic)
 	}
 
-	if millis != s.currentMillis {
-		s.currentMillis = millis
+	if secondsSinceEpoch != s.currentSeconds {
+		s.currentSeconds = secondsSinceEpoch
 		s.currentIteration = 0
 	}
 
 	if s.currentIteration >= s.maxIteration {
-		time.Sleep(100 * time.Microsecond)
+		time.Sleep(250 * time.Millisecond)
 		s.lock.Unlock()
 		return s.Sequence()
 	}
 
 	s.currentIteration += 1
 	defer s.lock.Unlock()
-	return sequenceOk(s.currentMillis, s.currentIteration)
+	return sequenceOk(s.currentSeconds, s.currentIteration)
 }
 
-// Returns and starts a new sequence provider, can be stopped by invoking Close()
+//NewSequenceProvider returns and starts a new sequence provider, can be stopped by invoking Close()
 func NewSequenceProvider(clock Clock, maxSequence uint16) (*sequenceProviderImpl, error) {
 
 	if maxSequence > MaxSequence {

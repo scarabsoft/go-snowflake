@@ -17,17 +17,15 @@ func TestNewUnixClockWithEpoch(t *testing.T) {
 		assert := hamcrest.NewAssertion(t)
 
 		testInstance := NewUnixClockWithEpoch(0)
-		r, err := testInstance.Millis()
-		assert.That(err, is.Nil())
-		assert.That(r, is.EqualTo(uint64(time.Now().UnixNano()/1e6)))
+		r := testInstance.Seconds()
+		assert.That(r, is.EqualTo(uint64(time.Now().Unix())))
 	})
 
 	t.Run("provided epoch which is now", func(t *testing.T) {
 		assert := hamcrest.NewAssertion(t)
 
-		testInstance := NewUnixClockWithEpoch(uint64(time.Now().UnixNano()))
-		r, err := testInstance.Millis()
-		assert.That(err, is.Nil())
+		testInstance := NewUnixClockWithEpoch(uint64(time.Now().Unix()))
+		r := testInstance.Seconds()
 		assert.That(r, is.EqualTo(uint64(0)))
 	})
 }

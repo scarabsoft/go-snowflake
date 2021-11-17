@@ -32,11 +32,6 @@ func (i idImpl) ID() uint64 {
 	return i.id
 }
 
-func (i idImpl) Millis() uint64 {
-	r := i.ID() >> 22
-	return r
-}
-
 func (i idImpl) Weeks() uint64 {
 	return i.Days() / 7
 }
@@ -54,7 +49,7 @@ func (i idImpl) Minutes() uint64 {
 }
 
 func (i idImpl) Seconds() uint64 {
-	return i.Millis() / 1000
+	return i.ID() >> 22
 }
 
 func (i idImpl) NodeID() uint8 {
@@ -72,7 +67,6 @@ func (i idImpl) String() string {
 type ID interface {
 	ID() uint64
 
-	Millis() uint64
 	Weeks() uint64
 	Days() uint64
 	Hours() uint64
@@ -113,7 +107,7 @@ type generatorBuilderImpl struct {
 
 type Option func(*generatorBuilderImpl) error
 
-// Sets a custom clock. Default system clock with UNIX epoch
+// WithClock sets a custom clock. Default system clock with UNIX epoch
 func WithClock(clock Clock) Option {
 	return func(impl *generatorBuilderImpl) error {
 		impl.clock = clock
@@ -121,7 +115,7 @@ func WithClock(clock Clock) Option {
 	}
 }
 
-// Sets the NodeIDProvider, which allows to generate nodeID based on hardware, like MAC or ...
+// WithNodeIDProvider sets the NodeIDProvider, which allows to generate nodeID based on hardware, like MAC or ...
 // Make sure it generates a unique 8bit ID per node otherwise you will get duplicated IDs
 func WithNodeIDProvider(provider NodeIDProvider) Option {
 	return func(impl *generatorBuilderImpl) error {
@@ -130,7 +124,7 @@ func WithNodeIDProvider(provider NodeIDProvider) Option {
 	}
 }
 
-// Sets the id of the current Node. By default 1
+// WithNodeID sets the id of the current Node. By default 1
 func WithNodeID(nodeID uint8) Option {
 	return func(impl *generatorBuilderImpl) error {
 		impl.nodeProvider = NewFixedNodeProvider(nodeID)
@@ -138,7 +132,7 @@ func WithNodeID(nodeID uint8) Option {
 	}
 }
 
-// Sets the max sequence per ms the system should support. By default 16,383 (16,383 ids can be generated per ms)
+// WithMaxSequence sets the max sequence per ms the system should support. By default 16,383 (16,383 ids can be generated per ms)
 func WithMaxSequence(maxSeq uint16) Option {
 	return func(impl *generatorBuilderImpl) error {
 		impl.maxSequence = maxSeq
@@ -146,7 +140,7 @@ func WithMaxSequence(maxSeq uint16) Option {
 	}
 }
 
-// Returns a new default generator and apply the requested options
+// New returns a new default generator and apply the requested options
 //
 // Default:
 //		- Clock: system clock returning UNIX epoch

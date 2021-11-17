@@ -15,7 +15,7 @@ type incrementClockImpl struct {
 	lock  sync.Mutex
 }
 
-func (i *incrementClockImpl) Millis() (uint64, error) {
+func (i *incrementClockImpl) Seconds() (uint64, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	i.value++

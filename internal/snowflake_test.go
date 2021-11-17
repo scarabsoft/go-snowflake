@@ -11,9 +11,9 @@ type countUpClock struct {
 	value uint64
 }
 
-func (c *countUpClock) Millis() (uint64, error) {
+func (c *countUpClock) Seconds() uint64 {
 	c.value++
-	return c.value, nil
+	return c.value
 }
 
 func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
@@ -97,7 +97,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 		})
 	})
 
-	t.Run("different host", func(t *testing.T) {
+	t.Run("different node", func(t *testing.T) {
 
 		t.Run("1", func(t *testing.T) {
 			assert := hamcrest.NewAssertion(t)

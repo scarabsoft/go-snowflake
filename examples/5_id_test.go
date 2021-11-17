@@ -11,7 +11,7 @@ type fakeClockImpl struct {
 	value uint64
 }
 
-func (f fakeClockImpl) Millis() (uint64, error) {
+func (f fakeClockImpl) Seconds() (uint64, error) {
 	return f.value, nil
 }
 

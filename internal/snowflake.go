@@ -15,7 +15,7 @@ func (s *snowFlakeGeneratorImpl) Next() (uint64, error) {
 		return 0, seq.Error
 	}
 
-	id := seq.Millis << uint64(totalBits-epochBits)
+	id := seq.Seconds << uint64(totalBits-epochBits)
 	id |= uint64(s.nodeID) << uint64(totalBits-epochBits-nodeBits)
 	id |= uint64(seq.Iteration)
 
@@ -23,12 +23,8 @@ func (s *snowFlakeGeneratorImpl) Next() (uint64, error) {
 }
 
 func NewGenerator(seq SequenceProvider, node NodeIDProvider) (SnowflakeGenerator, error) {
-	nodeID, err := node.ID()
-	if err != nil {
-		return nil, err
-	}
 	return &snowFlakeGeneratorImpl{
 		seqProvider: seq,
-		nodeID:      nodeID,
+		nodeID:      node.ID(),
 	}, nil
 }

@@ -1,61 +1,34 @@
 package internal
 
 import (
-	"errors"
 	"github.com/scarabsoft/go-hamcrest"
 	"github.com/scarabsoft/go-hamcrest/is"
 	"testing"
 	"time"
 )
 
-var givenErrClock = errors.New("givenErrClock")
-
-type errorClock struct{}
-
-func (e errorClock) Millis() (uint64, error) {
-	return 0, givenErrClock
-}
-
 type fakeClock struct {
 	value uint64
 }
 
-func (f fakeClock) Millis() (uint64, error) {
-	return f.value, nil
+func (f fakeClock) Seconds() uint64 {
+	return f.value
 }
 
 func TestSequenceOk(t *testing.T) {
 	assert := hamcrest.NewAssertion(t)
 	r := sequenceOk(10, 20)
-	assert.That(r.Millis, is.EqualTo(uint64(10)))
+	assert.That(r.Seconds, is.EqualTo(uint64(10)))
 	assert.That(r.Iteration, is.EqualTo(uint16(20)))
 	assert.That(r.Error, is.Nil())
 }
 
-func TestSequenceError(t *testing.T) {
-	assert := hamcrest.NewAssertion(t)
-	givenError := errors.New("givenError")
-	r := sequenceError(givenError)
-	assert.That(r.Millis, is.EqualTo(uint64(0)))
-	assert.That(r.Iteration, is.EqualTo(uint16(0)))
-	assert.That(r.Error, is.EqualTo(givenError))
-}
-
 func TestGenerateNextSequence(t *testing.T) {
-	t.Run("clock returns error", func(t *testing.T) {
-		assert := hamcrest.NewAssertion(t)
-		testInstance := &sequenceProviderImpl{clock: errorClock{}}
-
-		seq := testInstance.Sequence()
-		assert.That(seq.Millis, is.EqualTo(uint64(0)))
-		assert.That(seq.Iteration, is.EqualTo(uint16(0)))
-		assert.That(seq.Error, is.EqualTo(givenErrClock))
-	})
 	t.Run("clock skew", func(t *testing.T) {
 		assert := hamcrest.NewAssertion(t)
-		testInstance := &sequenceProviderImpl{currentMillis: 10, clock: fakeClock{6}}
+		testInstance := &sequenceProviderImpl{currentSeconds: 10, clock: fakeClock{6}}
 		seq := testInstance.Sequence()
-		assert.That(seq.Millis, is.EqualTo(uint64(0)))
+		assert.That(seq.Seconds, is.EqualTo(uint64(0)))
 		assert.That(seq.Iteration, is.EqualTo(uint16(0)))
 		assert.That(seq.Error, is.EqualTo(ErrClockNotMonotonic))
 	})
@@ -83,7 +56,7 @@ func TestGenerateNextSequence(t *testing.T) {
 		assert := hamcrest.NewAssertion(t)
 		testInstance := &sequenceProviderImpl{clock: fakeClock{10}, maxIteration: 2}
 		seq := testInstance.Sequence()
-		assert.That(seq.Millis, is.EqualTo(uint64(10)))
+		assert.That(seq.Seconds, is.EqualTo(uint64(10)))
 		assert.That(seq.Iteration, is.EqualTo(uint16(1)))
 		assert.That(seq.Error, is.Nil())
 	})
@@ -94,14 +67,14 @@ type incrementalClock struct {
 	currentCallCounter int
 }
 
-func (i *incrementalClock) Millis() (uint64, error) {
+func (i *incrementalClock) Seconds() uint64 {
 	i.currentCallCounter++
 	if i.currentCallCounter > 10 {
 		i.currentCallCounter = 0
 		i.currentTime++
 	}
 
-	return i.currentTime, nil
+	return i.currentTime
 }
 
 func TestSequenceProviderImpl(t *testing.T) {
@@ -112,7 +85,7 @@ func TestSequenceProviderImpl(t *testing.T) {
 	for j := 0; j < 2; j++ {
 		for i := 0; i < 10; i++ {
 			seq := testInstance.Sequence()
-			assert.That(seq.Millis, is.EqualTo(uint64(j)))
+			assert.That(seq.Seconds, is.EqualTo(uint64(j)))
 			assert.That(seq.Iteration, is.EqualTo(uint16(i+1)))
 			assert.That(seq.Error, is.Nil())
 		}
@@ -126,14 +99,14 @@ func TestSequenceProvider_SequenceExhaustion(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		seq := testInstance.Sequence()
-		assert.That(seq.Millis, is.EqualTo(uint64(0)))
+		assert.That(seq.Seconds, is.EqualTo(uint64(0)))
 		assert.That(seq.Iteration, is.EqualTo(uint16(i+1)))
 		assert.That(seq.Error, is.Nil())
 	}
 
 	for i := 0; i < 5; i++ {
 		seq := testInstance.Sequence()
-		assert.That(seq.Millis, is.EqualTo(uint64(1)))
+		assert.That(seq.Seconds, is.EqualTo(uint64(1)))
 		assert.That(seq.Iteration, is.EqualTo(uint16(i+1)))
 		assert.That(seq.Error, is.Nil())
 	}

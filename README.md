@@ -15,7 +15,7 @@ future will strongly avoid API changes to existing functions.
 ### ID Format
 The format is different from original Twitter snowflake format.
 * The ID as a whole is a 64 bit integer stored in an uint64
-* 42 bits are used to store a timestamp with millisecond precision, using a custom epoch.
+* 42 bits are used to store a timestamp with second precision.
 *  8 bits are used to store a node id - a range from 0 through 255.
 * 14 bits are used to store a sequence number - a range from 1 through 16383.
 
@@ -25,7 +25,7 @@ The format is different from original Twitter snowflake format.
 +---------------------------------------------------------+
 ```
 
-This allows for **16383** unique IDs to be generated every millisecond, per Node ID.
+This allows for **16383** unique IDs to be generated every second, per Node ID.
 
 ### Custom Format
 You can alter the number of bits used for the node id and step number (sequence)
@@ -81,10 +81,10 @@ gen, err := snowflake.New(
 
 ### How it Works.
 Each time you generate an ID, it works, like this.
-* A timestamp with millisecond precision is stored using 42 bits of the ID.
+* A timestamp with second precision is stored using 42 bits of the ID.
 * Then the nodeID is added in subsequent bits.
-* Then the Sequence iteration is added, starting at 1 and incrementing for each ID generated in the same millisecond.
- If you generate more IDs in a millisecond than max available, the generator will stop producing Ids until the next millisecond 
+* Then the Sequence iteration is added, starting at 1 and incrementing for each ID generated in the same second.
+ If you generate more IDs in a second than max available, the generator will stop producing Ids until the next second 
  
 
 ## Getting Started
@@ -130,6 +130,3 @@ BenchmarkTestBenchmark_Parallel
 BenchmarkTestBenchmark_Parallel-8   	10395352	       117.8 ns/op
 ```
 
-With default settings, this snowflake generator should be sufficiently fast 
-enough on most systems to generate 4096+ unique ids per millisecond. 
-The maximum snowflake ID this format supports is 16383. 
