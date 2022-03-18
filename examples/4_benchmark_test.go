@@ -9,7 +9,7 @@ import (
 
 var cores = runtime.NumCPU()
 var wg = sync.WaitGroup{}
-var gen, _ = snowflake.New()
+var gen, _ = snowflake.NewGenerator()
 
 func BenchmarkTestBenchmark_Single(b *testing.B) {
 	for i := 0; i < b.N; i++ {

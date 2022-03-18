@@ -11,15 +11,15 @@ type fakeClockImpl struct {
 	value uint64
 }
 
-func (f fakeClockImpl) Seconds() (uint64, error) {
-	return f.value, nil
+func (f fakeClockImpl) Seconds() uint64 {
+	return f.value
 }
 
 func TestID(t *testing.T) {
 	assert := hamcrest.NewAssertion(t)
 
-	gen, err := snowflake.New(
-		snowflake.WithClock(fakeClockImpl{value: 1626786340918}),
+	gen, err := snowflake.NewGenerator(
+		snowflake.WithClock(fakeClockImpl{value: 1647619145}),
 		snowflake.WithNodeID(128),
 	)
 	assert.That(err, is.Nil())
@@ -30,14 +30,13 @@ func TestID(t *testing.T) {
 
 	assert.That(testInstance.Iteration(), is.EqualTo(uint16(1)))
 
-	assert.That(testInstance.Millis(), is.EqualTo(uint64(1626786340918)))
-	assert.That(testInstance.Seconds(), is.EqualTo(uint64(1626786340)))
-	assert.That(testInstance.Minutes(), is.EqualTo(uint64(27113105)))
-	assert.That(testInstance.Hours(), is.EqualTo(uint64(451885)))
-	assert.That(testInstance.Days(), is.EqualTo(uint64(18828)))
-	assert.That(testInstance.Weeks(), is.EqualTo(uint64(2689)))
+	assert.That(testInstance.Seconds(), is.EqualTo(uint64(1647619145)))
+	assert.That(testInstance.Minutes(), is.EqualTo(uint64(27460319)))
+	assert.That(testInstance.Hours(), is.EqualTo(uint64(457671)))
+	assert.That(testInstance.Days(), is.EqualTo(uint64(19069)))
+	assert.That(testInstance.Weeks(), is.EqualTo(uint64(2724)))
 
-	assert.That(testInstance.String(), is.EqualTo("6823236456859828225"))
+	assert.That(testInstance.String(), is.EqualTo("6910615572447233"))
 }
 
 func TestFrom(t *testing.T) {

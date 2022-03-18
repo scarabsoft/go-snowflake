@@ -5,29 +5,24 @@ import (
 	"github.com/scarabsoft/go-hamcrest"
 	"github.com/scarabsoft/go-hamcrest/is"
 	"github.com/scarabsoft/go-snowflake"
-	"sync"
 	"testing"
-	"time"
 )
 
 type incrementClockImpl struct {
 	value uint64
-	lock  sync.Mutex
 }
 
-func (i *incrementClockImpl) Seconds() (uint64, error) {
-	i.lock.Lock()
-	defer i.lock.Unlock()
+func (i incrementClockImpl) Seconds() uint64 {
 	i.value++
-	return i.value, nil
+	return i.value
 }
 
 func TestCustomClockEpoch(t *testing.T) {
 	assert := hamcrest.NewAssertion(t)
 
-	now := uint64(time.Now().UnixNano())
-	gen, err := snowflake.New(
-		snowflake.WithClock(snowflake.NewUnixClockWithEpoch(now)),
+	gen, err := snowflake.NewGenerator(
+		snowflake.WithClock(incrementClockImpl{}),
+		snowflake.WithNodeID(1),
 	)
 
 	assert.That(err, is.Nil())
@@ -35,6 +30,6 @@ func TestCustomClockEpoch(t *testing.T) {
 	r, err := gen.Next()
 	assert.That(err, is.Nil())
 	binId := fmt.Sprintf("%064b", r.ID())
-	assert.That(binId, is.EqualTo("0000000000000000000000000000000000000000000000000100000000000001"))
+	assert.That(binId, is.EqualTo("0000000000000000000000000000000000000000010000000100000000000001"))
 
 }

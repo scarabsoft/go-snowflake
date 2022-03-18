@@ -57,7 +57,7 @@ func TestSnowFlakeGeneratorImpl_Next(t *testing.T) {
 		})
 	})
 
-	t.Run("once per ms", func(t *testing.T) {
+	t.Run("once per s", func(t *testing.T) {
 		assert := hamcrest.NewAssertion(t)
 
 		seqProvider, err := NewSequenceProvider(&countUpClock{}, 10)

@@ -11,7 +11,7 @@ import (
 func TestSimple(t *testing.T) {
 	assert := hamcrest.NewAssertion(t)
 
-	gen, err := snowflake.New()
+	gen, err := snowflake.NewGenerator()
 	assert.That(err, is.Nil())
 
 	var prev uint64 = 0

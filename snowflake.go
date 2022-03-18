@@ -3,6 +3,8 @@ package snowflake
 import (
 	"fmt"
 	"github.com/scarabsoft/go-snowflake/internal"
+	"os"
+	"strconv"
 )
 
 type NodeIDProvider interface {
@@ -18,6 +20,7 @@ func NewFixedNodeProvider(id uint8) NodeIDProvider {
 // ID format:   |-----42 Epoch Bits-----|-----8 Node Bits-----|-----14 Sequence Bits-----|
 type Generator interface {
 	Next() (ID, error)
+	MustNext() ID
 }
 
 type generatorImpl struct {
@@ -86,6 +89,14 @@ func (g *generatorImpl) Next() (ID, error) {
 	return &idImpl{r}, nil
 }
 
+func (g *generatorImpl) MustNext() ID {
+	if r, err := g.Next(); err != nil {
+		panic(err)
+	} else {
+		return r
+	}
+}
+
 // Clock provides a time in ms for the generator and will be called for every ID once
 type Clock interface {
 	internal.Clock
@@ -115,7 +126,7 @@ func WithClock(clock Clock) Option {
 	}
 }
 
-// WithNodeIDProvider sets the NodeIDProvider, which allows to generate nodeID based on hardware, like MAC or ...
+// WithNodeIDProvider sets the NodeIDProvider, which allows generating nodeID based on hardware, like MAC or ...
 // Make sure it generates a unique 8bit ID per node otherwise you will get duplicated IDs
 func WithNodeIDProvider(provider NodeIDProvider) Option {
 	return func(impl *generatorBuilderImpl) error {
@@ -132,7 +143,7 @@ func WithNodeID(nodeID uint8) Option {
 	}
 }
 
-// WithMaxSequence sets the max sequence per ms the system should support. By default 16,383 (16,383 ids can be generated per ms)
+// WithMaxSequence sets the max sequence per s the system should support. By default, 16,383 (16,383 ids can be generated per s)
 func WithMaxSequence(maxSeq uint16) Option {
 	return func(impl *generatorBuilderImpl) error {
 		impl.maxSequence = maxSeq
@@ -140,13 +151,13 @@ func WithMaxSequence(maxSeq uint16) Option {
 	}
 }
 
-// New returns a new default generator and apply the requested options
+// NewGenerator returns a new default generator and apply the requested options
 //
 // Default:
 //		- Clock: system clock returning UNIX epoch
 //		- Node: has ID 1
-//		- MaxSequence: set to 16,383 (16,383 ids can be generated per ms)
-func New(options ...Option) (Generator, error) {
+//		- MaxSequence: set to 16,383 (16,383 ids can be generated per s)
+func NewGenerator(options ...Option) (Generator, error) {
 	r := &generatorBuilderImpl{
 		clock:        NewUnixClock(),
 		nodeProvider: NewFixedNodeProvider(1),
@@ -179,6 +190,52 @@ func New(options ...Option) (Generator, error) {
 	return &generatorImpl{
 		gen: gen,
 	}, nil
+}
+
+func MustNewGenerator(options ...Option) Generator {
+	if r, err := NewGenerator(options...); err != nil {
+		panic(err)
+	} else {
+		return r
+	}
+}
+
+func NewID() (ID, error) {
+	nodeID := uint8(1)
+	genesisEpoch := uint64(0)
+
+	if nodeIDStr, found := os.LookupEnv("NODE_ID"); found {
+		if v, err := strconv.Atoi(nodeIDStr); err != nil {
+			panic(err)
+		} else {
+			nodeID = uint8(v)
+		}
+	}
+
+	if genesisEpochSecondsStr, found := os.LookupEnv("GENESIS_EPOCH_SECONDS"); found {
+		if v, err := strconv.Atoi(genesisEpochSecondsStr); err != nil {
+			panic(err)
+		} else {
+			genesisEpoch = uint64(v)
+		}
+	}
+
+	if gen, err := NewGenerator(
+		WithNodeID(nodeID),
+		WithClock(NewUnixClockWithEpoch(genesisEpoch)),
+	); err != nil {
+		return nil, err
+	} else {
+		return gen.Next()
+	}
+}
+
+func MustNewID() ID {
+	if r, err := NewID(); err != nil {
+		panic(err)
+	} else {
+		return r
+	}
 }
 
 func From(id uint64) ID {

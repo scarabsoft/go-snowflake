@@ -13,8 +13,8 @@ type fakeClock struct {
 	value uint64
 }
 
-func (f fakeClock) Seconds() (uint64, error) {
-	return f.value, nil
+func (f fakeClock) Seconds() uint64 {
+	return f.value
 }
 
 func TestCustomNodeId(t *testing.T) {
@@ -22,14 +22,14 @@ func TestCustomNodeId(t *testing.T) {
 
 	clock := fakeClock{1337}
 
-	nodeGen1, err := snowflake.New(
+	nodeGen1, err := snowflake.NewGenerator(
 		snowflake.WithNodeID(1),
 		snowflake.WithClock(clock),
 	)
 
 	assert.That(err, is.Nil())
 
-	nodeGen2, err := snowflake.New(
+	nodeGen2, err := snowflake.NewGenerator(
 		snowflake.WithNodeID(2),
 		snowflake.WithClock(clock),
 	)
